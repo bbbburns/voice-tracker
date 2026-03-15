@@ -1,0 +1,7 @@
+services:
+  voice-tracker:
+    build: .
+    container_name: voice-tracker
+    restart: unless-stopped
+    env_file:
+      - .env
