@@ -4,7 +4,7 @@ Tracks how often your Home Assistant voice assistant handles requests locally ve
 
 ## How it works
 
-The tracker connects to Home Assistant via WebSocket and polls the Assist pipeline debug endpoint every 5 seconds for new voice pipeline runs. For each new run, it checks whether the request was handled by HA's built-in intent engine or passed off to Claude:
+The tracker connects to Home Assistant via WebSocket and polls the Assist pipeline debug endpoint every 30 seconds for new voice pipeline runs. For each new run, it checks whether the request was handled by HA's built-in intent engine or passed off to Claude:
 
 - **Local** → increments `counter.voice_requests_local`
 - **AI** → increments `counter.voice_requests_ai`
