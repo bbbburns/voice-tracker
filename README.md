@@ -56,8 +56,8 @@ PIPELINE_ID=your-pipeline-id
 All voice requests are written to `data/voice_requests.jsonl` on the host (bind-mounted into the container). Each line is a JSON object:
 
 ```json
-{"timestamp": "2026-03-16T01:38:27.047039+00:00", "run_id": "your-run-id", "engine": "homeassistant", "intent_input": "turn off den light", "handled_by": "local"}
-{"timestamp": "2026-03-16T01:45:04.611069+00:00", "run_id": "your-run-id", "engine": "conversation.claude_conversation", "intent_input": "What time will it rain tomorrow", "handled_by": "ai"}
+{"timestamp": "2026-03-16T10:36:27.536072+00:00", "run_id": "01AAAAAAAAAAAAAAAAAAAAAAAA", "engine": "conversation.claude_conversation", "intent_input": "Turn off den light", "handled_by": "local"}
+{"timestamp": "2026-03-16T16:43:01.515671+00:00", "run_id": "01BBBBBBBBBBBBBBBBBBBBBBBB", "engine": "conversation.claude_conversation", "intent_input": "Do I need a raincoat when I go outside now?", "handled_by": "ai"}
 ```
 
 Filter by type with `jq 'select(.handled_by == "ai")'` if needed. To find patterns and identify requests worth turning into local automations:
