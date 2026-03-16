@@ -6,7 +6,7 @@ Single-file Python service (`tracker.py`) that watches a Home Assistant voice pi
 
 ## Key design decisions
 
-- **Polling, not subscriptions**: The script polls the debug list endpoint every 5 seconds rather than subscribing to pipeline events. This keeps the implementation simple and avoids dealing with HA's event subscription lifecycle.
+- **Polling, not subscriptions**: The script polls the debug list endpoint every 30 seconds rather than subscribing to pipeline events. No push API exists for pipeline events (open HA issue, unmerged as of early 2025). The interval is derived from the buffer math: HA's `STORED_PIPELINE_RUNS = 10`, so `max_safe_interval = 10 / (1/3s) = 30s` at the worst-case realistic sustained rate.
 - **Seen-ID set**: A `seen_run_ids` set is seeded on startup (and on each reconnect) with all currently visible runs so pre-existing runs are never double-counted.
 - **SSL verification disabled**: HA typically uses a self-signed cert on the local network; `ssl.CERT_NONE` is intentional.
 

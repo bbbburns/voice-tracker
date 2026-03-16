@@ -23,7 +23,10 @@ PIPELINE_ID = os.environ["PIPELINE_ID"]  # ID of the pipeline to monitor (from a
 WS_URL    = f"wss://{HA_HOST}:{HA_PORT}/api/websocket"  # WebSocket endpoint
 REST_URL  = f"https://{HA_HOST}:{HA_PORT}/api"          # REST API endpoint
 
-POLL_INTERVAL = 5  # How often (seconds) to check for new pipeline runs
+# HA's pipeline debug buffer holds exactly 10 runs (STORED_PIPELINE_RUNS in HA core).
+# Safe interval = buffer_size / max_sustainable_rate.
+# At 1 query/3s sustained (far above realistic home use), max safe = 30s.
+POLL_INTERVAL = 30  # How often (seconds) to check for new pipeline runs
 
 # ---------------------------------------------------------------------------
 # Home Assistant auth header for REST API calls

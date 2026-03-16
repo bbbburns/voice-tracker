@@ -5,7 +5,7 @@ A Docker containerized Python service that monitors a local Home Assistant insta
 ## What it does
 
 - Connects to HA via WebSocket (`wss://`) and authenticates with a long-lived access token
-- Polls `assist_pipeline/pipeline_debug/list` every 5 seconds for new pipeline runs
+- Polls `assist_pipeline/pipeline_debug/list` every 30 seconds for new pipeline runs (HA's debug buffer holds 10 runs; 30s is safe up to a sustained rate of 1 query/3s)
 - For each new run, fetches full event detail and checks the `processed_locally` field in the `intent-end` event; all runs are appended to `data/voice_requests.jsonl` with a `handled_by` field
   - `true` → increments `counter.voice_requests_local`, logs `"handled_by": "local"`
   - `false` → increments `counter.voice_requests_ai`, logs `"handled_by": "ai"`
