@@ -214,21 +214,20 @@ async def main():
                             processed_locally = parsed["processed_locally"]
 
                             if processed_locally is True:
+                                handled_by, entity = "local", LOCAL_ENTITY
                                 log.info(f"Run {run_id}: local intent")
-                                if intent_input is None:
-                                    log.warning(f"Run {run_id}: intent-start missing, skipping log entry")
-                                else:
-                                    log_request(run_id, timestamp, intent_input, engine, "local")
-                                await increment(session, LOCAL_ENTITY)
                             elif processed_locally is False:
+                                handled_by, entity = "ai", AI_ENTITY
                                 log.info(f"Run {run_id}: AI intent — {intent_input!r}")
-                                if intent_input is None:
-                                    log.warning(f"Run {run_id}: intent-start missing, skipping log entry")
-                                else:
-                                    log_request(run_id, timestamp, intent_input, engine, "ai")
-                                await increment(session, AI_ENTITY)
                             else:
                                 log.warning(f"Run {run_id}: processed_locally not found in intent-end event")
+                                continue
+
+                            if intent_input is None:
+                                log.warning(f"Run {run_id}: intent-start missing, skipping log entry")
+                            else:
+                                log_request(run_id, timestamp, intent_input, engine, handled_by)
+                            await increment(session, entity)
 
             except Exception as e:
                 log.error(f"Connection error: {e} — reconnecting in 10s")
