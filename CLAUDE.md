@@ -6,22 +6,24 @@ A Docker containerized Python service that monitors a local Home Assistant insta
 
 - Connects to HA via WebSocket (`wss://`) and authenticates with a long-lived access token
 - Polls `assist_pipeline/pipeline_debug/list` every 5 seconds for new pipeline runs
-- For each new run, fetches full event detail and checks the `processed_locally` field in the `intent-end` event
-  - `true` → increments `counter.voice_requests_local`
-  - `false` → increments `counter.voice_requests_ai` and appends a JSONL record to `data/ai_requests.jsonl`
+- For each new run, fetches full event detail and checks the `processed_locally` field in the `intent-end` event; all runs are appended to `data/voice_requests.jsonl` with a `handled_by` field
+  - `true` → increments `counter.voice_requests_local`, logs `"handled_by": "local"`
+  - `false` → increments `counter.voice_requests_ai`, logs `"handled_by": "ai"`
 - Reconnects automatically on connection loss
 
 ## Project structure
 
 ```
 tracker.py        Main script (asyncio + websockets + aiohttp)
+tests/
+  test_tracker.py Pure-function unit tests (pytest)
 Dockerfile        python:3.12-slim image
 compose.yml       Single-service Docker Compose
 requirements.txt  websockets==12.0, aiohttp==3.9.5
 .env              Runtime secrets (never commit this)
 .gitignore        Excludes .env and data/
 data/             Bind-mounted into container at /data (gitignored)
-  ai_requests.jsonl   JSONL log of AI-handled requests (created on first AI request)
+  voice_requests.jsonl   JSONL log of all voice requests with handled_by field
 ```
 
 ## Configuration (.env)
@@ -39,10 +41,23 @@ data/             Bind-mounted into container at /data (gitignored)
 - WebSocket responses are read with `ws.recv()` without validating that the response `id` matches the request `id`
 - SSL certificate verification is disabled (`CERT_NONE`) to support HA's self-signed local cert
 - `intent-end` is occasionally missing from a run's event list (e.g. pipeline errored before reaching intent processing, or STT failed). These runs log a WARNING and are silently skipped — no counter is incremented and nothing is written to the log file.
+- `intent-start` is occasionally missing (e.g. STT failure). If `processed_locally` is set but `intent_input` is absent, the counter is still incremented but the run is not written to the log file (WARNING is logged).
+- `log_request` I/O errors (e.g. disk full) log an error and continue — they do not trigger a reconnect.
 
 ## Running
 
 ```sh
 docker compose up -d --build
 docker compose logs -f
+```
+
+## Tests
+
+Tests cover `parse_intent_events` and `log_request` (the pure/side-effecting functions that hold the tricky logic). The async WebSocket loop is not tested.
+
+```sh
+python3 -m venv .venv
+source .venv/bin/activate
+pip install pytest websockets aiohttp
+pytest tests/ -v
 ```

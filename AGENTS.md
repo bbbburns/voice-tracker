@@ -25,12 +25,13 @@ Single-file Python service (`tracker.py`) that watches a Home Assistant voice pi
 | WebSocket | `assist_pipeline/pipeline_debug/get`         | Get events for a specific run  |
 | REST POST | `/api/services/counter/increment`            | Increment a counter helper     |
 
-## AI request logging
+## Request logging
 
-When `processed_locally` is `false`, the tracker writes a JSONL record to `/data/ai_requests.jsonl` (bind-mounted to `./data/` on the host). Example record:
+Every completed run is written to `/data/voice_requests.jsonl` (bind-mounted to `./data/` on the host) with a `handled_by` field indicating `"local"` or `"ai"`. Example records:
 
 ```json
-{"timestamp": "2026-03-16T01:45:04.611069+00:00", "run_id": "01KKT52V66VJTYQ4728RFJRVTK", "engine": "conversation.claude_conversation", "intent_input": "What time will it rain tomorrow"}
+{"timestamp": "2026-03-16T01:38:27.047039+00:00", "run_id": "01KKT52V66VJTYQ4728RFJRVTK", "engine": "homeassistant", "intent_input": "turn off den light", "handled_by": "local"}
+{"timestamp": "2026-03-16T01:45:04.611069+00:00", "run_id": "01KKT52V66VJTYQ4728RFJRVTK", "engine": "conversation.claude_conversation", "intent_input": "What time will it rain tomorrow", "handled_by": "ai"}
 ```
 
 Fields come from two events in the same run's event list:

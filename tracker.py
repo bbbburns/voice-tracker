@@ -40,7 +40,7 @@ HEADERS = {
 LOCAL_ENTITY = "counter.voice_requests_local"  # Incremented when HA handled intent locally
 AI_ENTITY    = "counter.voice_requests_ai"     # Incremented when Claude handled the intent
 
-AI_LOG_PATH = "/data/ai_requests.jsonl"
+VOICE_LOG_PATH = "/data/voice_requests.jsonl"
 
 # ---------------------------------------------------------------------------
 # SSL context - disables certificate verification since HA typically uses
@@ -51,16 +51,46 @@ ssl_context.check_hostname = False
 ssl_context.verify_mode = ssl.CERT_NONE
 
 
-def log_ai_request(run_id, timestamp, intent_input, engine):
-    os.makedirs(os.path.dirname(AI_LOG_PATH), exist_ok=True)
+def log_request(run_id, timestamp, intent_input, engine, handled_by):
+    os.makedirs(os.path.dirname(VOICE_LOG_PATH), exist_ok=True)
     record = {
         "timestamp": timestamp,
         "run_id": run_id,
         "engine": engine,
         "intent_input": intent_input,
+        "handled_by": handled_by,  # "local" or "ai"
     }
-    with open(AI_LOG_PATH, "a") as f:
-        f.write(json.dumps(record) + "\n")
+    try:
+        with open(VOICE_LOG_PATH, "a") as f:
+            f.write(json.dumps(record) + "\n")
+    except OSError as e:
+        log.error(f"Failed to write log entry for run {run_id}: {e}")
+
+
+def parse_intent_events(events):
+    """
+    Extract intent fields from a pipeline run's event list.
+    Returns a dict with intent_input, engine, timestamp, processed_locally.
+    Any field may be None if the corresponding event was absent.
+    """
+    intent_input = None
+    engine = None
+    timestamp = None
+    processed_locally = None
+    for event in events:
+        if event["type"] == "intent-start":
+            intent_input = event["data"].get("intent_input")
+            engine = event["data"].get("engine")
+            timestamp = event.get("timestamp")
+        elif event["type"] == "intent-end":
+            processed_locally = event["data"].get("processed_locally")
+            break
+    return {
+        "intent_input": intent_input,
+        "engine": engine,
+        "timestamp": timestamp,
+        "processed_locally": processed_locally,
+    }
 
 
 async def increment(session, entity_id):
@@ -174,26 +204,25 @@ async def main():
                             # Collect intent-start and intent-end data from the event list.
                             # True  = HA matched the intent locally, no LLM involved.
                             # False = Claude processed the request.
-                            intent_input = None
-                            engine = None
-                            timestamp = None
-                            processed_locally = None
-
-                            for event in events:
-                                if event["type"] == "intent-start":
-                                    intent_input = event["data"].get("intent_input")
-                                    engine = event["data"].get("engine")
-                                    timestamp = event.get("timestamp")
-                                elif event["type"] == "intent-end":
-                                    processed_locally = event["data"].get("processed_locally")
-                                    break
+                            parsed = parse_intent_events(events)
+                            intent_input = parsed["intent_input"]
+                            engine = parsed["engine"]
+                            timestamp = parsed["timestamp"]
+                            processed_locally = parsed["processed_locally"]
 
                             if processed_locally is True:
                                 log.info(f"Run {run_id}: local intent")
+                                if intent_input is None:
+                                    log.warning(f"Run {run_id}: intent-start missing, skipping log entry")
+                                else:
+                                    log_request(run_id, timestamp, intent_input, engine, "local")
                                 await increment(session, LOCAL_ENTITY)
                             elif processed_locally is False:
                                 log.info(f"Run {run_id}: AI intent — {intent_input!r}")
-                                log_ai_request(run_id, timestamp, intent_input, engine)
+                                if intent_input is None:
+                                    log.warning(f"Run {run_id}: intent-start missing, skipping log entry")
+                                else:
+                                    log_request(run_id, timestamp, intent_input, engine, "ai")
                                 await increment(session, AI_ENTITY)
                             else:
                                 log.warning(f"Run {run_id}: processed_locally not found in intent-end event")
