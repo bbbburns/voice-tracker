@@ -134,8 +134,9 @@ async def main():
                     }))
                     msg = json.loads(await ws.recv())
                     if msg["type"] != "auth_ok":
-                        log.error("Authentication failed")
-                        break
+                        log.error("Authentication failed — check HA_TOKEN. Retrying in 60s")
+                        await asyncio.sleep(60)
+                        continue
                     log.info("Authenticated successfully")
 
                     seen_run_ids = set()

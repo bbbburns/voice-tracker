@@ -14,7 +14,7 @@ Single-file Python service (`tracker.py`) that watches a Home Assistant voice pi
 
 - `msg_id` must be incremented for every WebSocket request sent; HA rejects duplicate IDs within a session.
 - `ws.recv()` is called immediately after each send. There are no concurrent sends, so this is currently safe — but any refactor that parallelizes WS calls must add proper response routing by `id`.
-- `break` inside the auth-failure branch exits the outer reconnect loop (kills the process). This is a known bug — fix it before adding any logic that depends on resilient reconnection.
+- Auth failure logs an error, waits 60 seconds, and continues the reconnect loop rather than killing the process.
 - Runs that occur during a disconnection window are silently missed (they get seeded as seen on reconnect). This is consistent with startup behavior and is currently acceptable.
 
 ## HA API endpoints used

@@ -35,7 +35,7 @@ data/             Bind-mounted into container at /data (gitignored)
 
 ## Known issues / future work
 
-- Auth failure currently calls `break`, which exits the reconnect loop and kills the process — should raise an exception instead so the reconnect logic handles it
+- Auth failure waits 60 seconds and retries rather than killing the process — useful if the token is rotated without restarting the container
 - WebSocket responses are read with `ws.recv()` without validating that the response `id` matches the request `id`
 - SSL certificate verification is disabled (`CERT_NONE`) to support HA's self-signed local cert
 - `intent-end` is occasionally missing from a run's event list (e.g. pipeline errored before reaching intent processing, or STT failed). These runs log a WARNING and are silently skipped — no counter is incremented and nothing is written to the log file.
