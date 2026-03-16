@@ -56,3 +56,9 @@ AI-handled requests are written to `data/ai_requests.jsonl` on the host (bind-mo
 ```json
 {"timestamp": "2026-03-16T01:45:04.611069+00:00", "run_id": "your-run-id", "engine": "conversation.claude_conversation", "intent_input": "What time will it rain tomorrow"}
 ```
+
+To find patterns and identify requests worth turning into local automations:
+
+```sh
+jq -r '.intent_input' data/ai_requests.jsonl | claude "Group these voice requests by common intent or theme. For each group, suggest a local automation or device rename that would let Home Assistant handle them without AI."
+```
