@@ -38,6 +38,12 @@ Fields come from two events in the same run's event list:
 - `intent-start` → `intent_input`, `engine`, `timestamp`
 - `intent-end` → `processed_locally`
 
-## Why `intent-end` is sometimes missing
+## Key functions
 
-A WARNING is logged when a run's event list has no `intent-end` event. This happens when the pipeline fails before reaching intent processing — e.g. STT failed to transcribe, the pipeline timed out, or the user cancelled. No counter is incremented and nothing is written to the log file. This is expected and harmless.
+- `parse_intent_events(events)` — pure function; extracts `intent_input`, `engine`, `timestamp`, `processed_locally` from a run's event list. Any field may be `None` if the corresponding event was absent. Tested in `tests/test_tracker.py`.
+- `log_request(run_id, timestamp, intent_input, engine, handled_by)` — appends a JSONL record to `VOICE_LOG_PATH`; catches `OSError` and logs rather than raising.
+
+## Why `intent-end` or `intent-start` is sometimes missing
+
+- **`intent-end` missing**: pipeline failed before reaching intent processing (STT failure, timeout, user cancel). WARNING is logged; no counter incremented, nothing written to log.
+- **`intent-start` missing**: rare; if `processed_locally` is set but `intent_input` is `None`, WARNING is logged and `log_request` is skipped, but the counter is still incremented.
