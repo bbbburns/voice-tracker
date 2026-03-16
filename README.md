@@ -1,0 +1,58 @@
+# Voice Tracker
+
+Tracks how often your Home Assistant voice assistant handles requests locally versus sending them to Claude (AI). Runs as a Docker container alongside your Home Assistant instance.
+
+## How it works
+
+The tracker connects to Home Assistant via WebSocket and polls the Assist pipeline debug endpoint every 5 seconds for new voice pipeline runs. For each new run, it checks whether the request was handled by HA's built-in intent engine or passed off to Claude:
+
+- **Local** → increments `counter.voice_requests_local`
+- **AI** → increments `counter.voice_requests_ai` and appends a record to `data/ai_requests.jsonl`
+
+The log file lets you review what people are actually asking Claude so you can identify requests worth building into local automations.
+
+## Requirements
+
+- Docker + Docker Compose
+- A running Home Assistant instance
+- Two [counter helpers](https://www.home-assistant.io/integrations/counter/) created in HA:
+  - `counter.voice_requests_local`
+  - `counter.voice_requests_ai`
+- A long-lived access token from your HA profile page
+- The pipeline ID of the Assist pipeline to monitor (find it via Developer Tools → `assist_pipeline/pipeline/list`)
+
+## Setup
+
+1. Copy `.env.example` to `.env` and fill in your values (see below)
+2. Start the container:
+
+```sh
+docker compose up -d --build
+docker compose logs -f
+```
+
+## .env
+
+| Variable      | Description                                                    |
+|---------------|----------------------------------------------------------------|
+| `HA_HOST`     | IP or hostname of your Home Assistant instance                 |
+| `HA_PORT`     | HA port (usually `8123`)                                       |
+| `HA_TOKEN`    | Long-lived access token from your HA profile page             |
+| `PIPELINE_ID` | ID of the Assist pipeline to monitor                          |
+
+Example:
+
+```env
+HA_HOST=your-ha-ip-or-hostname
+HA_PORT=8123
+HA_TOKEN=your-long-lived-access-token
+PIPELINE_ID=your-pipeline-id
+```
+
+## AI request log
+
+AI-handled requests are written to `data/ai_requests.jsonl` on the host (bind-mounted into the container). Each line is a JSON object:
+
+```json
+{"timestamp": "2026-03-16T01:45:04.611069+00:00", "run_id": "your-run-id", "engine": "conversation.claude_conversation", "intent_input": "What time will it rain tomorrow"}
+```
