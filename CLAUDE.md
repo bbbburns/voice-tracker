@@ -14,16 +14,17 @@ A Docker containerized Python service that monitors a local Home Assistant insta
 ## Project structure
 
 ```
-tracker.py        Main script (asyncio + websockets + aiohttp)
+tracker.py              Main script (asyncio + websockets + aiohttp)
 tests/
-  test_tracker.py Pure-function unit tests (pytest)
-Dockerfile        python:3.12-slim image
-compose.yml       Single-service Docker Compose
-requirements.txt  websockets==12.0, aiohttp==3.9.5
-.env              Runtime secrets (never commit this)
-.gitignore        Excludes .env and data/
-data/             Bind-mounted into container at /data (gitignored)
-  voice_requests.jsonl   JSONL log of all voice requests with handled_by field
+  test_tracker.py       Pure-function unit tests (pytest)
+Dockerfile              python:3.12-slim image
+compose.yml             Single-service Docker Compose
+requirements.txt        websockets==12.0, aiohttp==3.9.5
+tail-voice-requests.sh  Stream voice_requests.jsonl in real time (human-readable)
+.env                    Runtime secrets (never commit this)
+.gitignore              Excludes .env and data/
+data/                   Bind-mounted into container at /data (gitignored)
+  voice_requests.jsonl  JSONL log of all voice requests with handled_by field
 ```
 
 ## Configuration (.env)

@@ -60,6 +60,14 @@ All voice requests are written to `data/voice_requests.jsonl` on the host (bind-
 {"timestamp": "2026-03-16T16:43:01.515671+00:00", "run_id": "01BBBBBBBBBBBBBBBBBBBBBBBB", "engine": "conversation.claude_conversation", "intent_input": "Do I need a raincoat when I go outside now?", "handled_by": "ai"}
 ```
 
+To stream new entries in real time with human-readable output:
+
+```sh
+./tail-voice-requests.sh
+# 2026-03-17 16:43:01  ai     Do I need a raincoat when I go outside now?
+# 2026-03-17 16:44:15  local  Turn off den light
+```
+
 Filter by type with `jq 'select(.handled_by == "ai")'` if needed. To find patterns and identify requests worth turning into local automations:
 
 ```sh
