@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import logging.handlers
 import os
 import ssl
 import aiohttp
@@ -11,6 +12,19 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(message)s"
 )
 log = logging.getLogger(__name__)
+
+def _add_file_logging(path="/data/tracker.log"):
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        handler = logging.handlers.RotatingFileHandler(
+            path, maxBytes=5 * 1024 * 1024, backupCount=3
+        )
+        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+        logging.getLogger().addHandler(handler)
+    except OSError:
+        pass
+
+_add_file_logging()
 
 # ---------------------------------------------------------------------------
 # Configuration - all values loaded from environment variables in .env
