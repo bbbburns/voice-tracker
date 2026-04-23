@@ -5,7 +5,7 @@ A Docker containerized Python service that monitors a local Home Assistant insta
 ## What it does
 
 - Connects to HA via WebSocket (`wss://`) and authenticates with a long-lived access token
-- Polls `assist_pipeline/pipeline_debug/list` every 30 seconds for new pipeline runs (HA's debug buffer holds 10 runs; 30s is safe up to a sustained rate of 1 query/3s)
+- On startup, loads previously-logged `run_id` values from `voice_requests.jsonl` to seed `seen_run_ids`, then polls `assist_pipeline/pipeline_debug/list` every 30 seconds for new runs (HA's debug buffer holds 10 runs; 30s is safe up to a sustained rate of 1 query/3s)
 - For each new run, fetches full event detail and checks the `processed_locally` field in the `intent-end` event; all runs are appended to `data/voice_requests.jsonl` with a `handled_by` field
   - `true` → increments `counter.voice_requests_local`, logs `"handled_by": "local"`
   - `false` → increments `counter.voice_requests_ai`, logs `"handled_by": "ai"`
@@ -44,6 +44,7 @@ data/                   Bind-mounted into container at /data (gitignored)
 - `intent-end` is occasionally missing from a run's event list (e.g. pipeline errored before reaching intent processing, or STT failed). These runs log a WARNING and are silently skipped — no counter is incremented and nothing is written to the log file.
 - `intent-start` is occasionally missing (e.g. STT failure). If `processed_locally` is set but `intent_input` is absent, the counter is still incremented but the run is not written to the log file (WARNING is logged).
 - `log_request` I/O errors (e.g. disk full) log an error and continue — they do not trigger a reconnect.
+- `load_seen_run_ids` silently returns an empty set if the log file is missing or unreadable — on a fresh install this is correct, but if the file becomes unreadable mid-deployment, a restart could double-count runs still in HA's 10-run buffer.
 
 ## Running
 

@@ -70,6 +70,23 @@ def log_request(run_id, timestamp, intent_input, engine, handled_by):
         log.error(f"Failed to write log entry for run {run_id}: {e}")
 
 
+def load_seen_run_ids():
+    seen = set()
+    try:
+        with open(VOICE_LOG_PATH) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    seen.add(json.loads(line)["run_id"])
+                except (json.JSONDecodeError, KeyError):
+                    pass
+    except FileNotFoundError:
+        pass
+    return seen
+
+
 def parse_intent_events(events):
     """
     Extract intent fields from a pipeline run's event list.
@@ -153,6 +170,8 @@ async def main():
     Reconnects automatically if the connection is lost.
     """
     async with aiohttp.ClientSession() as session:
+        seen_run_ids = load_seen_run_ids()
+        log.info(f"Loaded {len(seen_run_ids)} previously-logged run(s)")
         while True:
             try:
                 log.info(f"Connecting to {WS_URL}")
@@ -172,18 +191,7 @@ async def main():
                         continue
                     log.info("Authenticated successfully")
 
-                    seen_run_ids = set()
                     msg_id = 1
-
-                    # --- Seed existing runs on startup ---
-                    # We fetch the current run list immediately and mark all
-                    # existing runs as already seen, so we don't double-count
-                    # runs that occurred before this container started.
-                    runs = await get_pipeline_runs(ws, msg_id)
-                    msg_id += 1
-                    for run in runs:
-                        seen_run_ids.add(run["pipeline_run_id"])
-                    log.info(f"Seeded {len(seen_run_ids)} existing run(s), watching for new ones")
 
                     # --- Polling loop ---
                     while True:
